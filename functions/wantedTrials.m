@@ -13,21 +13,37 @@
 %           only trials in which foraging *was not* completed; [] all trials,
 %           regardless of whether foraging was completed.
 %
-% Optional inputs:
+% Optional inputs - specify these in 'name','value' pairs; e.g.:
+%   trials = wantedTrials(...,'trialTypes','choice');
 %       
-%       startDir - specify a fourth input as the directory housing
+%       'startDir' - optionally specify the directory housing
 %           the .txt files you want to analyze. If you know you'll always
 %           store the files in one place, you can edit this function such
-%           that startDir defaults to some directory.       
-%           
+%           that startDir defaults to some directory.  
+%       'trialTypes' - 'choice' (default) or 'cued', or any other string value to
+%           include all trials.
+%       'rewardMag' - optionally separate by reward magnitude. By default,
+%       	all reward mag values will be included; set 'rewardMag',[1] for
+%       	small rewards, 'rewardMag',[2], for med rewards, ... etc.
 
 function extrData = wantedTrials(outcomes,forageLength,completedForage,varargin)
 
+% -- extract optional params -- 
+
+params = struct(...
+    'rewardMag','all',...
+    'trialTypes','choice', ...
+    'startDir',[] ...
+    );
+
+params = structInpParse(params,varargin);
+
 % -- load files --
-if nargin < 4;
+
+if isempty(params.startDir);
     startDir = ('/Volumes/My Passport/NICK/Chang Lab 2016/jessica');
 else
-    startDir = varargin{1};
+    startDir = params.startDir;
 end
 
 cd(startDir);
@@ -42,13 +58,13 @@ end
 concatFiles = concatenateData(storeFile);  %transform cell array to one matrix
                                            %housing all of the data
                                            
-% -- define all desired inputs --
+% -- define forage times as short v. long --
 
 switch forageLength
     case 'short'
         forageTimes = 0;
     case 'long'
-        forageTimes = [100 350 700]; %define wanted forage times
+        forageTimes = [100 350 700]; 
 end
                                            
 % -- get index of completed foraging --
@@ -63,6 +79,7 @@ end
 
 % -- get index of desired fix times --
 
+forageTimeInds = zeros(size(concatFiles,1),length(forageTimes));
 for i = 1:length(forageTimes); %determine which foraging times equal the 
                                %current foraging time, as pulled from
                                %forageTimes
@@ -95,10 +112,27 @@ switch outcomes
         outInd = self | neith;
 end
 
+% -- get index of choice trials -- 
+
+if strcmp(params.trialTypes,'choice')
+    trialTypeInd = logical(concatFiles(:,2));
+elseif strcmp(params.trialTypes,'cued');
+    trialTypeInd = ~logical(concatFiles(:,2));
+else
+    trialTypeInd = ones(size(concatFiles,1),1);
+end
+
+% -- get index of desired reward magnitude --
+
+if strcmp(params.rewardMag,'all')
+    rewardMagInd = ones(size(concatFiles,1),1);
+else
+    rewardMagInd = concatFiles(:,9) == params.rewardMag;
+end
+
 % -- extract desired data --
 
-allInds = outInd & foraged & forageTimeInds;
-
+allInds = outInd & foraged & forageTimeInds & trialTypeInd;
 extrData = concatFiles(allInds,:);
 
 
