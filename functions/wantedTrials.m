@@ -33,6 +33,7 @@ function extrData = wantedTrials(outcomes,forageLength,completedForage,varargin)
 params = struct(...
     'rewardMag','all',...
     'trialTypes','choice', ...
+    'stimColor','all', ...
     'startDir',[] ...
     );
 
@@ -122,6 +123,15 @@ else
     trialTypeInd = ones(size(concatFiles,1),1);
 end
 
+% -- get index of stim colors --
+
+if strcmp(params.stimColor,'all');
+    stimColorInd = ones(size(concatFiles,1),1);
+else
+    %%% fill in
+    stimColorInd = ones(size(concatFiles,1),1);
+end
+
 % -- get index of desired reward magnitude --
 
 if strcmp(params.rewardMag,'all')
@@ -132,7 +142,8 @@ end
 
 % -- extract desired data --
 
-allInds = outInd & foraged & forageTimeInds & trialTypeInd;
+allInds = outInd & foraged & forageTimeInds & trialTypeInd & ...
+    rewardMagInd & stimColorInd;
 extrData = concatFiles(allInds,:);
 
 
